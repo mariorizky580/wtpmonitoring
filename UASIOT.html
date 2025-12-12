@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WTP Monitoring Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .icon-box { font-size: 2.5rem; opacity: 0.8; }
+        .status-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; }
+        .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); color: white; }
+        .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); color: white; }
+        .bg-gradient-info { background: linear-gradient(45deg, #36b9cc, #258391); color: white; }
+        .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); color: white; }
+        .header-title { margin-top: 20px; margin-bottom: 30px; text-align: center; color: #333; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="header-title"><i class="fas fa-water"></i> MONITORING WATER TREATMENT PLANT & GUDANG</h2>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="alertBox" class="alert alert-success text-center fw-bold" role="alert">
+                SISTEM AMAN
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-md-3 col-6">
+            <div class="card bg-gradient-warning p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">Suhu Gudang</h6>
+                        <h2 class="mb-0"><span id="suhu">0</span>&deg;C</h2>
+                    </div>
+                    <div class="icon-box"><i class="fas fa-temperature-high"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card bg-gradient-info p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">Kelembaban</h6>
+                        <h2 class="mb-0"><span id="kelembaban">0</span>%</h2>
+                    </div>
+                    <div class="icon-box"><i class="fas fa-tint"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card bg-gradient-primary p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">Level Air</h6>
+                        <h2 class="mb-0"><span id="level_air">0</span> cm</h2>
+                    </div>
+                    <div class="icon-box"><i class="fas fa-ruler-vertical"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+            <div class="card bg-gradient-success p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-uppercase mb-1">TDS (PPM)</h6>
+                        <h2 class="mb-0"><span id="tds">0</span></h2>
+                    </div>
+                    <div class="icon-box"><i class="fas fa-flask"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 g-4">
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <i class="fas fa-fill-drip fa-3x mb-3 text-primary"></i>
+                <h5>Pompa 1 (Intake)</h5>
+                <span id="status_pompa1" class="badge bg-secondary status-badge">OFF</span>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <i class="fas fa-filter fa-3x mb-3 text-success"></i>
+                <h5>Pompa 2 (Dosing)</h5>
+                <span id="status_pompa2" class="badge bg-secondary status-badge">OFF</span>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <i class="fas fa-eye fa-3x mb-3 text-info"></i>
+                <h5>Kekeruhan (Raw)</h5>
+                <h3 id="turbidity" class="fw-bold text-dark">0</h3>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mt-5 text-muted">
+        <small>Project Monitoring PEM Akamigas - Update Realtime via Firebase</small>
+    </div>
+</div>
+
+<script type="module">
+    // Import Library Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // Konfigurasi Firebase (Sesuai punya kamu)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCSKiYIDWaVdMhVoYQkMsdI2_zoI0mL5PQ",
+        authDomain: "wtpmonitoring.firebaseapp.com",
+        databaseURL: "https://wtpmonitoring-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "wtpmonitoring",
+        storageBucket: "wtpmonitoring.firebasestorage.app",
+        messagingSenderId: "718947646102",
+        appId: "1:718947646102:web:64a2b85f3fc56ee9ba20b7"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Referensi Database (Sesuai path di ESP32: /monitoring)
+    const monitoringRef = ref(db, 'monitoring');
+
+    // Fungsi Update Data Realtime
+    onValue(monitoringRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data) {
+            console.log("Data diterima:", data); // Cek Console browser jika error
+
+            // Update Angka
+            document.getElementById("suhu").innerText = data.suhu ? parseFloat(data.suhu).toFixed(1) : "0";
+            document.getElementById("kelembaban").innerText = data.kelembaban ? parseFloat(data.kelembaban).toFixed(1) : "0";
+            document.getElementById("level_air").innerText = data.level_air ? parseFloat(data.level_air).toFixed(1) : "0";
+            document.getElementById("tds").innerText = data.tds_raw || "0";
+            document.getElementById("turbidity").innerText = data.turbidity_raw || "0";
+
+            // Update Status Pompa 1
+            const p1 = document.getElementById("status_pompa1");
+            p1.innerText = data.status_pompa1;
+            if (data.status_pompa1.includes("ON")) {
+                p1.className = "badge bg-success status-badge";
+            } else {
+                p1.className = "badge bg-secondary status-badge";
+            }
+
+            // Update Status Pompa 2
+            const p2 = document.getElementById("status_pompa2");
+            p2.innerText = data.status_pompa2;
+            if (data.status_pompa2.includes("ON")) {
+                p2.className = "badge bg-success status-badge";
+            } else {
+                p2.className = "badge bg-secondary status-badge";
+            }
+
+            // Update Alert Box (Warna Merah jika Bahaya)
+            const alertBox = document.getElementById("alertBox");
+            alertBox.innerText = data.alert_gudang || "Menunggu Data...";
+            
+            if (data.alert_gudang && data.alert_gudang.includes("AMAN")) {
+                alertBox.className = "alert alert-success text-center fw-bold";
+            } else {
+                alertBox.className = "alert alert-danger text-center fw-bold"; // Merah kedip
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
